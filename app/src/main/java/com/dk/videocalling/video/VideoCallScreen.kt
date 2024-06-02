@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import io.getstream.video.android.compose.permission.rememberCallPermissionsState
 import io.getstream.video.android.compose.ui.components.call.activecall.CallContent
+import io.getstream.video.android.compose.ui.components.call.controls.actions.DefaultOnCallActionHandler
+import io.getstream.video.android.core.call.state.LeaveCall
 
 @Composable
 fun VideoCallScreen(
@@ -85,7 +87,17 @@ fun VideoCallScreen(
                             onAction(VideoCallAction.JoinCallClick)
                         }
                     }
-                )
+                ),
+                onCallAction = { action ->
+                    if(action == LeaveCall){
+                        onAction(VideoCallAction.OnDisconnectClick)
+                    }
+
+                    DefaultOnCallActionHandler.onCallAction(state.call, action)
+                },
+                onBackPressed = {
+                    onAction(VideoCallAction.OnDisconnectClick)
+                }
             )
         }
     }

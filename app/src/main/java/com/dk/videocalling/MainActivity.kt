@@ -9,9 +9,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.dk.videocalling.connect.ConnectScreen
+import com.dk.videocalling.connect.ConnectViewModel
 import com.dk.videocalling.ui.theme.VideoCallingTheme
+import com.dk.videocalling.video.CallState
+import com.dk.videocalling.video.VideoCallScreen
+import com.dk.videocalling.video.VideoCallViewModel
+import io.getstream.video.android.compose.theme.VideoTheme
+import kotlinx.serialization.Serializable
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,9 +32,52 @@ class MainActivity : ComponentActivity() {
         setContent {
             VideoCallingTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    val navController = rememberNavController()
+                    NavHost(
+                        navController = navController,
+                        startDestination = ConnectRoute,
+                        modifier = Modifier.padding(innerPadding)
+                    ){
+                        composable<ConnectRoute>{
+                            val viewModel = koinViewModel<ConnectViewModel>()
+                            val state = viewModel.state
 
+                            LaunchedEffect(key1 = state.isConnected){
+                                if(state.isConnected){
+                                    navController.navigate(VideoCallRoute){
+                                        popUpTo(ConnectRoute){
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+                            }
+                            ConnectScreen(state = state, onAction = viewModel::onAction)
+                        }
+                        composable<VideoCallRoute>{
+                            val viewModel = koinViewModel<VideoCallViewModel>()
+                            val state = viewModel.state
+                            LaunchedEffect(key1 = state.callState){
+                                if(state.callState == CallState.ENDED){
+                                    navController.navigate(ConnectRoute){
+                                        popUpTo(VideoCallRoute){
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+                            }
+                            VideoTheme{
+                                VideoCallScreen(state = state, onAction = viewModel::onAction)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+@Serializable
+data object ConnectRoute
+
+@Serializable
+data object VideoCallRoute
